@@ -10,7 +10,7 @@ import (
 const CosmosDirectoryURL = "https://chains.cosmos.directory"
 
 func query() (*CosmosDirectory, error) {
-	httpClient := &http.Client{Timeout: 2 * time.Second}
+	httpClient := &http.Client{Timeout: 5 * time.Second}
 	r, err := httpClient.Get(CosmosDirectoryURL)
 	if err != nil {
 		return nil, err
