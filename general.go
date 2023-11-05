@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"main/pkg/cosmosdirectory"
+	"github.com/nysa-network/cosmos-exporter/pkg/cosmosdirectory"
 
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"

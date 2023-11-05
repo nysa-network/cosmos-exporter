@@ -1,4 +1,4 @@
-module main
+module github.com/nysa-network/cosmos-exporter
 
 go 1.16
 

@@ -2,7 +2,7 @@ package cosmosdirectory_test
 
 import (
 	"fmt"
-	"main/pkg/cosmosdirectory"
+	"github.com/nysa-network/cosmos-exporter/pkg/cosmosdirectory"
 	"testing"
 
 	"github.com/stretchr/testify/require"
