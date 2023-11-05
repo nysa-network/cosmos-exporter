@@ -5,20 +5,58 @@ import (
 	"math/big"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/nysa-network/cosmos-exporter/pkg/cosmosdirectory"
+	"google.golang.org/grpc"
 
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	govv1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/google/uuid"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
+
+
+func queryGovCount(conn *grpc.ClientConn) (int, error) {
+	// Handle v1beta1
+	govv1beta1Client := govv1beta1.NewQueryClient(conn)
+	{
+		proposals, err := govv1beta1Client.Proposals(context.Background(), &govv1beta1.QueryProposalsRequest{
+			ProposalStatus: govv1beta1.StatusVotingPeriod,
+		})
+		if err != nil {
+			if !strings.Contains(err.Error(), `invalid type: can't convert a gov/v1 Proposal to gov/v1beta1 Proposal`) {
+				return 0, err
+			}
+		} else if err == nil {
+			pp := proposals.GetProposals()
+			return len(pp), nil
+		}
+	}
+
+	govv1Client := govv1.NewQueryClient(conn)
+	{
+		proposals, err := govv1Client.Proposals(context.Background(), &govv1.QueryProposalsRequest{
+			ProposalStatus: govv1.StatusVotingPeriod,
+		})
+		if err != nil {
+			return 0, err
+		}
+		pp := proposals.GetProposals()
+		return len(pp), nil
+	}
+
+	return 0, nil
+}
+
+
 
 func (s *service) GeneralHandler(w http.ResponseWriter, r *http.Request) {
 	requestStart := time.Now()
@@ -311,18 +349,16 @@ func (s *service) GeneralHandler(w http.ResponseWriter, r *http.Request) {
 	go func() {
 		defer wg.Done()
 		sublogger.Debug().Msg("Started querying global gov params")
-		govClient := govtypes.NewQueryClient(s.grpcConn)
-		proposals, err := govClient.Proposals(context.Background(), &govtypes.QueryProposalsRequest{
-			ProposalStatus: govtypes.StatusVotingPeriod,
-		})
+
+		govCount, err := queryGovCount(s.grpcConn)
 		if err != nil {
 			sublogger.Error().
 				Err(err).
 				Msg("Could not get active proposals")
+			govCount = -1
 		}
 
-		proposalsCount := len(proposals.GetProposals())
-		paramsGovVotingPeriodProposals.Set(float64(proposalsCount))
+		paramsGovVotingPeriodProposals.Set(float64(govCount))
 	}()
 
 	wg.Wait()
