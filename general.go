@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 	"net/http"
 	"strconv"
@@ -22,7 +23,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
-
 
 func queryGovCount(conn *grpc.ClientConn) (int, error) {
 	// Handle v1beta1
@@ -55,8 +55,6 @@ func queryGovCount(conn *grpc.ClientConn) (int, error) {
 
 	return 0, nil
 }
-
-
 
 func (s *service) GeneralHandler(w http.ResponseWriter, r *http.Request) {
 	requestStart := time.Now()
@@ -288,6 +286,12 @@ func (s *service) GeneralHandler(w http.ResponseWriter, r *http.Request) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
+		defer func() {
+			if r := recover(); r != nil {
+				sublogger.Error().Msg(fmt.Sprintf("Failed to query inflation: %v", r))
+			}
+		}()
+
 		sublogger.Debug().Msg("Started querying inflation")
 		queryStart := time.Now()
 
@@ -296,6 +300,7 @@ func (s *service) GeneralHandler(w http.ResponseWriter, r *http.Request) {
 			context.Background(),
 			&minttypes.QueryInflationRequest{},
 		)
+		fmt.Println("COUCOU")
 		if err != nil {
 			sublogger.Error().Err(err).Msg("Could not get inflation")
 			return
@@ -317,6 +322,12 @@ func (s *service) GeneralHandler(w http.ResponseWriter, r *http.Request) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
+		defer func() {
+			if r := recover(); r != nil {
+				sublogger.Error().Msg(fmt.Sprintf("Failed to query annual provision: %v", r))
+			}
+		}()
+
 		sublogger.Debug().Msg("Started querying annual provisions")
 		queryStart := time.Now()
 
