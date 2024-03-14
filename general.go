@@ -300,7 +300,7 @@ func (s *service) GeneralHandler(w http.ResponseWriter, r *http.Request) {
 			context.Background(),
 			&minttypes.QueryInflationRequest{},
 		)
-		fmt.Println("COUCOU")
+
 		if err != nil {
 			sublogger.Error().Err(err).Msg("Could not get inflation")
 			return
